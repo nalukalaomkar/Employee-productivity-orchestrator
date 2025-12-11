@@ -1,0 +1,162 @@
+openapi: 3.0.3
+info:
+  title: ServiceNow Productivity Manager - Fixed OAuth
+  description: ServiceNow integration with correct Watson Orchestrate OAuth callback
+  version: 2.0.0
+
+servers:
+  - url: https://dev216352.service-now.com/api/now/table
+    description: techGen Crew ServiceNow Instance
+
+security:
+  - oauth2: []
+
+paths:
+  /incident:
+    get:
+      summary: "🎫 Get My Incidents"
+      description: "Show incidents assigned to me or created by me"
+      operationId: getMyIncidents
+      parameters:
+        - name: sysparm_query
+          in: query
+          required: false
+          description: "Filter incidents"
+          schema:
+            type: string
+            default: "active=true^assigned_toSTARTSWITHjavascript:gs.getUserName()^ORopened_bySTARTSWITHjavascript:gs.getUserName()"
+        - name: sysparm_limit
+          in: query
+          description: "Maximum records"
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: "Your incidents"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  result:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        number:
+                          type: string
+                        short_description:
+                          type: string
+                        state:
+                          type: string
+                        priority:
+                          type: string
+
+    post:
+      summary: "🆘 Create Incident"
+      description: "Report a productivity-blocking issue"
+      operationId: createIncident
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - short_description
+              properties:
+                short_description:
+                  type: string
+                  description: "Brief description of the issue"
+                  example: "Development tools not responding - blocking productivity"
+                description:
+                  type: string
+                  description: "Detailed description"
+                  example: "IDE crashes frequently, losing work and reducing team productivity"
+                urgency:
+                  type: string
+                  description: "Urgency level (1=High, 2=Medium, 3=Low)"
+                  enum: ["1", "2", "3"]
+                  default: "2"
+                impact:
+                  type: string
+                  description: "Business impact (1=High, 2=Medium, 3=Low)"
+                  enum: ["1", "2", "3"]
+                  default: "2"
+                category:
+                  type: string
+                  description: "Issue category"
+                  enum: ["Hardware", "Software", "Network", "Other"]
+                  default: "Software"
+      responses:
+        '201':
+          description: "Incident created successfully"
+
+  /change_request:
+    get:
+      summary: "🔄 Get Change Requests"
+      description: "Show change requests for productivity improvements"
+      operationId: getChangeRequests
+      parameters:
+        - name: sysparm_query
+          in: query
+          schema:
+            type: string
+            default: "requested_bySTARTSWITHjavascript:gs.getUserName()"
+        - name: sysparm_limit
+          in: query
+          schema:
+            type: integer
+            default: 10
+      responses:
+        '200':
+          description: "Your change requests"
+
+    post:
+      summary: "📝 Request Change"
+      description: "Request productivity-related system improvements"
+      operationId: createChangeRequest
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - short_description
+              properties:
+                short_description:
+                  type: string
+                  example: "Upgrade development environment for better productivity"
+                description:
+                  type: string
+                  example: "Current tools are outdated and causing delays"
+                justification:
+                  type: string
+                  example: "Will improve team productivity by 25%"
+                type:
+                  type: string
+                  enum: ["Standard", "Normal", "Emergency"]
+                  default: "Standard"
+      responses:
+        '201':
+          description: "Change request created"
+
+components:
+  securitySchemes:
+    oauth2:
+      type: oauth2
+      flows:
+        authorizationCode:
+          authorizationUrl: https://dev216352.service-now.com/oauth_auth.do
+          tokenUrl: https://dev216352.service-now.com/oauth_token.do
+          scopes:
+            useraccount: "User account access"
+      description: |
+        OAuth 2.0 authentication for ServiceNow.
+       
+        **IMPORTANT**: Update your ServiceNow OAuth application redirect URI to:
+        https://eu-de.watson-orchestrate.cloud.ibm.com/mfe_connectors/api/v1/agentic/oauth/_callback
+       
+        Client ID: bf97f66b31434992bcba3cdfbacd5de9
