@@ -1,0 +1,153 @@
+openapi: 3.0.3
+info:
+  title: Employee Productivity Assistant V2
+  description: Task management with proper Jira Cloud restrictions - V2
+  version: 6.0.0
+
+servers:
+  - url: https://nalukala-omkar.atlassian.net/rest/api/3
+
+security:
+  - basicAuth: []
+
+paths:
+  /search/jql:
+    get:
+      summary: "📋 Show My Tasks V2"
+      description: "Get your tasks from specific projects or time periods"
+      operationId: getMyTasksV2
+      parameters:
+        - name: jql
+          in: query
+          required: true
+          description: "Choose a search option"
+          schema:
+            type: string
+            enum:
+              - "project = TC AND (assignee = currentUser() OR reporter = currentUser())"
+              - "project = MDP AND (assignee = currentUser() OR reporter = currentUser())"
+              - "(assignee = currentUser() OR reporter = currentUser()) AND updated >= -7d"
+              - "(assignee = currentUser() OR reporter = currentUser()) AND updated >= -30d"
+            default: "project = TC AND (assignee = currentUser() OR reporter = currentUser())"
+        - name: maxResults
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 20
+        - name: fields
+          in: query
+          required: false
+          schema:
+            type: string
+            default: "summary,status,assignee,priority,project,updated"
+      responses:
+        '200':
+          description: "Your filtered task list"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  total:
+                    type: integer
+                  issues:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        key:
+                          type: string
+                        fields:
+                          type: object
+
+  /project/search:
+    get:
+      summary: "📁 List Projects V2"
+      description: "Show all available projects"
+      operationId: listProjectsV2
+      parameters:
+        - name: maxResults
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 50
+      responses:
+        '200':
+          description: "Project list"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  values:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                        key:
+                          type: string
+                        name:
+                          type: string
+                  total:
+                    type: integer
+
+  /issue:
+    post:
+      summary: "➕ Create Task V2"
+      description: "Create a new task in TC or MDP project"
+      operationId: createNewTaskV2
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                fields:
+                  type: object
+                  properties:
+                    project:
+                      type: object
+                      properties:
+                        key:
+                          type: string
+                          enum: ["TC", "MDP"]
+                          description: "Project: TC (techGen Crew) or MDP (My discovery project)"
+                    summary:
+                      type: string
+                      description: "Task title"
+                    issuetype:
+                      type: object
+                      properties:
+                        name:
+                          type: string
+                          default: "Task"
+            example:
+              fields:
+                project:
+                  key: "TC"
+                summary: "Complete Watson Orchestrate integration testing"
+                issuetype:
+                  name: "Task"
+      responses:
+        '201':
+          description: "Task created"
+
+  /myself:
+    get:
+      summary: "👤 My Profile V2"
+      description: "Show current user information"
+      operationId: getMyProfileV2
+      responses:
+        '200':
+          description: "User profile"
+
+components:
+  securitySchemes:
+    basicAuth:
+      type: http
+      scheme: basic
